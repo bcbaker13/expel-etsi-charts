@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine, Label } from 'recharts';
 
 // Data for Figure 1: Breakdown of job descriptions analyzed, by industry
 const dataFigure1 = [
@@ -67,6 +67,7 @@ const dataFigure4 = [
 ];
 
 // Data for Figure 5: Breakdown of seniority across all analyzed open job descriptions
+// Original values sum to 101. Pie chart will reflect proportions of this total.
 const dataFigure5 = [
   { name: 'Non-Mgt', value: 80 },
   { name: 'Supervisor + Team Lead', value: 6 },
@@ -83,13 +84,17 @@ const dataFigure6 = [
 ];
 
 // Data for Figure 7: Average number of applicants for each role, by role seniority
-const dataFigure7 = [
+const dataFigure7_original = [
   { seniority: 'Non-Mgt', avgApplicants: 40.5 },
   { seniority: 'Supervisor + Team Lead', avgApplicants: 37.2 },
   { seniority: 'Senior Manager + Manager', avgApplicants: 38.6 },
   { seniority: 'Senior Director + Director + VP + C-level', avgApplicants: 50.3 },
-  { seniority: 'All', avgApplicants: 40.6 },
+  { seniority: 'All', avgApplicants: 40.6 }, // Used for average line
 ];
+// Filtered data for bars, excluding 'All'
+const dataFigure7_forBars = dataFigure7_original.filter(item => item.seniority !== 'All');
+const overallAverageApplicants = dataFigure7_original.find(item => item.seniority === 'All')?.avgApplicants || 0;
+
 
 // Data for Figure 8: Percentage of job applicants for each open role, by job category
 const dataFigure8 = [
@@ -134,9 +139,14 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#FF69B4'
 
 const App = () => {
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-8 font-inter">
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-8">
+      {/*
+        For Create React App, it's best practice to put these <script> and <link> tags
+        in the <head> of your `public/index.html` file.
+      */}
       <script src="https://cdn.tailwindcss.com"></script>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+      <style>{`body { font-family: 'Inter', sans-serif; }`}</style>
 
       <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-8 rounded-lg p-2 shadow-md bg-white">
         2025 Enterprise Cybersecurity Talent Index - Appendix C Charts
@@ -144,7 +154,7 @@ const App = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
 
-        {/* Figure 1: Breakdown of job descriptions analyzed, by industry */}
+        {/* Figure 1: MODIFIED YAxis tick font size */}
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 text-center">
             Figure 1: Breakdown of job descriptions analyzed, by industry
@@ -153,11 +163,16 @@ const App = () => {
             <BarChart
               data={dataFigure1}
               margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
-              layout="vertical" // Make it a horizontal bar chart for better readability of long labels
+              layout="vertical"
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tickFormatter={(value) => `${value}%`} />
-              <YAxis type="category" dataKey="name" width={150} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={150} // Adjust width if labels are still too long
+                tick={{ fontSize: 10 }} // MODIFIED: Smaller font size
+              />
               <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
               <Legend />
               <Bar dataKey="value" fill="#8884d8" name="% of Total Companies" radius={[10, 10, 10, 10]} />
@@ -194,27 +209,36 @@ const App = () => {
           <p className="text-sm text-gray-500 mt-4 text-center">How long the job had been posted at the time of analysis</p>
         </div>
 
-        {/* Figure 3: How long the job had been posted at the time of analysis, by industry */}
+        {/* Figure 3: MODIFIED to Grouped Bar Chart */}
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center col-span-1 md:col-span-2">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 text-center">
-            Figure 3: How long the job had been posted at the time of analysis, by industry
+            Figure 3: How long job posted, by industry (% of jobs within duration)
           </h2>
           <ResponsiveContainer width="100%" height={500}>
             <BarChart
               data={dataFigure3}
-              margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 90 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="industry" angle={-45} textAnchor="end" height={100} interval={0} />
+              <XAxis dataKey="industry" angle={-45} textAnchor="end" interval={0} height={100} tick={{ fontSize: 10 }} />
               <YAxis tickFormatter={(value) => `${value}%`} />
-              <Tooltip formatter={(value) => [`${value}%`, 'Value']} />
+              <Tooltip formatter={(value, name, props) => {
+                  const { payload } = props;
+                  let descriptiveName = name;
+                  if (name === "aWeek") descriptiveName = "% of 'A week old' jobs";
+                  if (name === "aMonth") descriptiveName = "% of 'A month old' jobs";
+                  if (name === "overAMonth") descriptiveName = "% of 'Over a month old' jobs";
+                  return [`${value}% in ${payload.industry}`, descriptiveName];
+              }} />
               <Legend />
-              <Bar dataKey="aWeek" stackId="a" fill="#82ca9d" name="A week" radius={[10, 10, 0, 0]} />
-              <Bar dataKey="aMonth" stackId="a" fill="#8884d8" name="A month" />
-              <Bar dataKey="overAMonth" stackId="a" fill="#ffc658" name="Over a month" radius={[0, 0, 10, 10]} />
+              <Bar dataKey="aWeek" fill="#82ca9d" name="% of 'A week old' jobs" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="aMonth" fill="#8884d8" name="% of 'A month old' jobs" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="overAMonth" fill="#ffc658" name="% of 'Over a month old' jobs" radius={[5, 5, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-          <p className="text-sm text-gray-500 mt-4 text-center">How long the job had been posted at the time of analysis, by industry</p>
+          <p className="text-sm text-gray-500 mt-4 text-center px-4">
+            Figure 3: For each industry, bars show the % of all jobs (within a specific posting duration category like 'A week old') that belong to that industry. For example, for Aerospace & Defense, {dataFigure3.find(d=>d.industry === 'Aerospace & Defense')?.aWeek || 'X'}% of all jobs posted 'a week ago' are in Aerospace & Defense.
+          </p>
         </div>
 
         {/* Figure 4: Breakdown of open roles across industries, by job category */}
@@ -225,10 +249,10 @@ const App = () => {
           <ResponsiveContainer width="100%" height={500}>
             <BarChart
               data={dataFigure4}
-              margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 90 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="industry" angle={-45} textAnchor="end" height={100} interval={0} />
+              <XAxis dataKey="industry" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 10 }} />
               <YAxis tickFormatter={(value) => `${value}%`} />
               <Tooltip formatter={(value) => [`${value}%`, 'Value']} />
               <Legend />
@@ -240,7 +264,7 @@ const App = () => {
           <p className="text-sm text-gray-500 mt-4 text-center">Breakdown of open roles across industries, by job category</p>
         </div>
 
-        {/* Figure 5: Breakdown of seniority across all analyzed open job descriptions */}
+        {/* Figure 5: MODIFIED label for Non-Mgt */}
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 text-center">
             Figure 5: Breakdown of seniority across all analyzed open job descriptions
@@ -255,17 +279,24 @@ const App = () => {
                 outerRadius={150}
                 fill="#8884d8"
                 dataKey="value"
-                label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }) => {
+                  if (name === 'Non-Mgt') {
+                    return 'Non-Mgt: 80%'; // MODIFIED: Display "80%" directly
+                  }
+                  return `${name}: ${(percent * 100).toFixed(0)}%`;
+                }}
               >
                 {dataFigure5.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
+              <Tooltip formatter={(value, name, props) => [`${props.payload.value} (actual value)`, name]} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
-          <p className="text-sm text-gray-500 mt-4 text-center">Breakdown of seniority across all analyzed open job descriptions</p>
+          <p className="text-sm text-gray-500 mt-4 text-center px-4">
+            Figure 5: Breakdown of seniority. Note: Source data values sum to 101. Pie slice sizes are proportional to these original values. The "Non-Mgt" label displays "80%" as requested; other percentage labels are calculated based on the 101 total.
+          </p>
         </div>
 
         {/* Figure 6: Breakdown of net-new jobs versus backfill positions */}
@@ -276,10 +307,10 @@ const App = () => {
           <ResponsiveContainer width="100%" height={400}>
             <BarChart
               data={dataFigure6}
-              margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 90 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="seniority" angle={-45} textAnchor="end" height={100} interval={0} />
+              <XAxis dataKey="seniority" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 10 }} />
               <YAxis tickFormatter={(value) => `${value}%`} />
               <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
               <Legend />
@@ -290,22 +321,36 @@ const App = () => {
           <p className="text-sm text-gray-500 mt-4 text-center">Breakdown of net-new jobs versus backfill positions</p>
         </div>
 
-        {/* Figure 7: Average number of applicants for each role, by role seniority */}
+        {/* Figure 7: MODIFIED to remove 'All' bar and add ReferenceLine */}
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
           <h2 className="text-xl font-semibold text-gray-700 mb-4 text-center">
             Figure 7: Average number of applicants for each role, by role seniority
           </h2>
           <ResponsiveContainer width="100%" height={400}>
             <BarChart
-              data={dataFigure7}
-              margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+              data={dataFigure7_forBars} // MODIFIED: Use filtered data
+              margin={{ top: 20, right: 30, left: 20, bottom: 90 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="seniority" angle={-45} textAnchor="end" height={100} interval={0} />
+              <XAxis dataKey="seniority" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 10 }} />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="avgApplicants" fill="#a28dff" name="Average Applicants" radius={[10, 10, 10, 10]} />
+              <Bar dataKey="avgApplicants" fill="#a28dff" name="Average Applicants" radius={[10, 10, 0, 0]} />
+              {overallAverageApplicants > 0 && ( // MODIFIED: Add ReferenceLine
+                <ReferenceLine
+                  y={overallAverageApplicants}
+                  stroke="red"
+                  strokeDasharray="3 3"
+                >
+                  <Label 
+                    value={`Overall Avg: ${overallAverageApplicants.toFixed(1)}`} 
+                    position="insideTopRight" 
+                    fill="red" 
+                    fontSize={10} 
+                  />
+                </ReferenceLine>
+              )}
             </BarChart>
           </ResponsiveContainer>
           <p className="text-sm text-gray-500 mt-4 text-center">Average number of applicants for each role, by role seniority</p>
@@ -319,10 +364,10 @@ const App = () => {
           <ResponsiveContainer width="100%" height={500}>
             <BarChart
               data={dataFigure8}
-              margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 90 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="applicants" angle={-45} textAnchor="end" height={100} interval={0} />
+              <XAxis dataKey="applicants" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 10 }} />
               <YAxis tickFormatter={(value) => `${value}%`} />
               <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
               <Legend />
@@ -342,10 +387,10 @@ const App = () => {
           <ResponsiveContainer width="100%" height={500}>
             <BarChart
               data={dataFigure9}
-              margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
+              margin={{ top: 20, right: 30, left: 20, bottom: 90 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="applicants" angle={-45} textAnchor="end" height={100} interval={0} />
+              <XAxis dataKey="applicants" angle={-45} textAnchor="end" height={100} interval={0} tick={{ fontSize: 10 }} />
               <YAxis tickFormatter={(value) => `${value}%`} />
               <Tooltip formatter={(value) => [`${value}%`, 'Percentage']} />
               <Legend />
@@ -365,12 +410,17 @@ const App = () => {
           <ResponsiveContainer width="100%" height={500}>
             <BarChart
               data={dataFigure10}
-              margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
-              layout="vertical" // Make it a horizontal bar chart for better readability of long labels
+              margin={{ top: 20, right: 30, left: 20, bottom: 50 }} // Bottom margin can be smaller if YAxis labels are shorter
+              layout="vertical"
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tickFormatter={(value) => `${value}%`} />
-              <YAxis type="category" dataKey="name" width={250} />
+              <YAxis
+                type="category"
+                dataKey="name"
+                width={250} // Adjust if needed
+                tick={{ fontSize: 10 }}
+              />
               <Tooltip formatter={(value) => [`${value}%`, 'Frequency']} />
               <Legend />
               <Bar dataKey="value" fill="#4682B4" name="Frequency" radius={[10, 10, 10, 10]} />
