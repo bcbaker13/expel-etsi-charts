@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/expel-etsi-charts/static/css/main.e6c13ad2.css",
-    "main.js": "/expel-etsi-charts/static/js/main.39ee5904.js",
+    "main.js": "/expel-etsi-charts/static/js/main.1fdf6e8d.js",
     "static/js/453.5f2e7416.chunk.js": "/expel-etsi-charts/static/js/453.5f2e7416.chunk.js",
     "index.html": "/expel-etsi-charts/index.html",
     "main.e6c13ad2.css.map": "/expel-etsi-charts/static/css/main.e6c13ad2.css.map",
-    "main.39ee5904.js.map": "/expel-etsi-charts/static/js/main.39ee5904.js.map",
+    "main.1fdf6e8d.js.map": "/expel-etsi-charts/static/js/main.1fdf6e8d.js.map",
     "453.5f2e7416.chunk.js.map": "/expel-etsi-charts/static/js/453.5f2e7416.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.e6c13ad2.css",
-    "static/js/main.39ee5904.js"
+    "static/js/main.1fdf6e8d.js"
   ]
 }
